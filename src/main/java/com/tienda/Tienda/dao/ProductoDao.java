@@ -27,4 +27,14 @@ public interface ProductoDao extends JpaRepository<Producto,Long> {
     @Query(nativeQuery=true,
             value="SELECT * FROM producto where producto.precio BETWEEN :precioInf AND :precioSup ORDER BY producto.descripcion ASC")
     public List<Producto> metodoNativo(@Param("precioInf") double precioInf, @Param("precioSup") double precioSup); 
+    
+     @Query(nativeQuery = true,
+       value = "SELECT * FROM producto WHERE descripcion LIKE CONCAT('%', :descricion, '%') ORDER BY producto.descripcion ASC")
+public List<Producto> Nombre(@Param("descricion") String descricion);
+
+@Query(nativeQuery=true,
+            value="SELECT * FROM producto where existencias BETWEEN :existenciasMin AND :existenciasMax ORDER BY producto.descripcion ASC")
+    public List<Producto> queryExitencia(@Param("existenciasMin") double existenciasMin, @Param("existenciasMax") double existenciasMax); 
+    
+
 }

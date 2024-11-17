@@ -79,4 +79,25 @@ public class ProductoController {
       model.addAttribute("categorias", categorias);
         return "/producto/modifica";
     }
+    
+     @PostMapping("/query3")
+    public String consultaQuery3(@RequestParam(value = "descripcion") String descripcion,
+             Model model) {
+        var productos = productoService.Nombre(descripcion);
+        model.addAttribute("productos", productos);
+        model.addAttribute("TotalProductos", productos.size());
+        model.addAttribute("descripcion", descripcion);
+        return "/producto/listado";
+    }
+    
+     @PostMapping("/query2")
+    public String consultaQuery3(@RequestParam(value = "existenciasMin") double existenciasMin,
+            @RequestParam(value = "existenciasMax") double existenciasMax, Model model) {
+        var productos = productoService.queryExitencia(existenciasMin, existenciasMax);
+        model.addAttribute("productos", productos);
+        model.addAttribute("TotalProductos", productos.size());
+        model.addAttribute("existenciasMin", existenciasMin);
+        model.addAttribute("existenciasMax", existenciasMax);
+        return "/producto/listado";
+    }
 }
