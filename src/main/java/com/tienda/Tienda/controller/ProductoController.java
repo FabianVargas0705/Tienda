@@ -12,6 +12,7 @@ import com.tienda.Tienda.domain.Producto;
 import com.tienda.Tienda.service.CategoriaService;
 import com.tienda.Tienda.service.ProductoService;
 import com.tienda.Tienda.service.impl.FireBaseStorageServiceImpl;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -42,11 +43,12 @@ public class ProductoController {
       return "/producto/listado";
     }
     
-        @GetMapping("/nuevo")
-    public String productoNuevo(Producto producto) {
-        return "/producto/modifica";
+    @GetMapping("/")
+    public String listarProductos(Model model) {
+        List<Producto> productos = productoService.getProductos(true);
+        model.addAttribute("productos", productos);
+        return "index";
     }
-
     @Autowired
     private FireBaseStorageServiceImpl firebaseStorageService;
     
@@ -100,4 +102,5 @@ public class ProductoController {
         model.addAttribute("existenciasMax", existenciasMax);
         return "/producto/listado";
     }
+    
 }

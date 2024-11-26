@@ -20,9 +20,11 @@ function readURL(input) {
 
 /* La siguiente función se utiliza para activar la cantidad de elementos seleccionados
  * En el carrito de compras utilizando un llamado "ajax" */
-function addCard(formulario) {
+function addCart(formulario) {
     var valor = formulario.elements[0].value;
-    var url = '/carrito/agregar';
-    url = url + '/' + valor;
-    $("#resultsBlock").load(url);
+    var existencias = formulario.elements[1].value;
+    if (existencias > 0) {
+        var url = "/carrito/agregar/" + valor;
+        $("#resultsBlock").load(url);
+    }
 }
