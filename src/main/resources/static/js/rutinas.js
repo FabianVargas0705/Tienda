@@ -20,7 +20,7 @@ function readURL(input) {
 
 /* La siguiente función se utiliza para activar la cantidad de elementos seleccionados
  * En el carrito de compras utilizando un llamado "ajax" */
-function addCart(formulario) {
+function addCard(formulario) {
     var valor = formulario.elements[0].value;
     var existencias = formulario.elements[1].value;
     if (existencias > 0) {

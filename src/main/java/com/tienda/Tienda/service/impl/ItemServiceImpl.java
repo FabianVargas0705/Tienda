@@ -8,117 +8,109 @@ package com.tienda.Tienda.service.impl;
  *
  * @author Fabián Vargas
  */
-import com.tienda.Tienda.dao.*;
-import com.tienda.Tienda.domain.*;
-import com.tienda.Tienda.service.*;
-import jakarta.servlet.http.HttpSession;
-import java.util.ArrayList;
+import com.tienda.Tienda.dao.FacturaDao;
+import com.tienda.Tienda.dao.VentaDao;
+import com.tienda.Tienda.domain.Producto;
+import com.tienda.Tienda.domain.Usuario;
+import com.tienda.Tienda.domain.Factura;
+import com.tienda.Tienda.domain.Item;
+import com.tienda.Tienda.domain.Venta;
+import com.tienda.Tienda.service.UsuarioService;
+import com.tienda.Tienda.service.ItemService;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import com.tienda.Tienda.dao.ProductoDao;
 
 @Service
 public class ItemServiceImpl implements ItemService {
 
-    @Autowired
-    private HttpSession session;
-
     @Override
     public List<Item> gets() {
-        List<Item> listaItems = (List) session.getAttribute("listaItems");
         return listaItems;
     }
 
+    //Se usa en el addCarrito... agrega un elemento
+    @Override
+    public void save(Item item) {
+        boolean existe = false;
+        for (Item i : listaItems) {
+            //Busca si ya existe el producto en el carrito
+            if (Objects.equals(i.getIdProducto(), item.getIdProducto())) {
+                //Valida si aún puede colocar un item adicional -segun existencias-
+                if (i.getCantidad() < item.getExistencias()) {
+                    //Incrementa en 1 la cantidad de elementos
+                    i.setCantidad(i.getCantidad() + 1);
+                }
+                existe = true;
+                break;
+            }
+        }
+        if (!existe) {//Si no está el producto en el carrito se agrega cantidad =1.            
+            item.setCantidad(1);
+            listaItems.add(item);
+        }
+    }
+
+    //Se usa para eliminar un producto del carrito
+    @Override
+    public void delete(Item item) {
+        var posicion = -1;
+        var existe = false;
+        for (Item i : listaItems) {
+            ++posicion;
+            if (Objects.equals(i.getIdProducto(), item.getIdProducto())) {
+                existe = true;
+                break;
+            }
+        }
+        if (existe) {
+            listaItems.remove(posicion);
+        }
+    }
+
+    //Se obtiene la información de un producto del carrito... para modificarlo
     @Override
     public Item get(Item item) {
-        List<Item> listaItems = (List) session.getAttribute("listaItems");
-        if (listaItems != null) {
-            for (Item i : listaItems) {
-                if (i.getIdProducto() == item.getIdProducto()) {
-                    return i;
-                }
+        for (Item i : listaItems) {
+            if (Objects.equals(i.getIdProducto(), item.getIdProducto())) {
+                return i;
             }
         }
         return null;
     }
 
+    //Se usa en la página para actualizar la cantidad de productos
     @Override
-    public void delete(Item item) {
-        List<Item> listaItems = (List) session.getAttribute("listaItems");
-        if (listaItems != null) {
-            var posicion = -1;
-            var existe = false;
-            for (Item i : listaItems) {
-                posicion++;
-                if (i.getIdProducto() == item.getIdProducto()) {
-                    existe = true;
-                    break;
-                }
-            }
-            if (existe) {
-                listaItems.remove(posicion);
-                session.setAttribute("listaItems", listaItems);
-            }
-        }
-    }
-
-    @Override
-    public void save(Item item) {
-        List<Item> listaItems = (List) session.getAttribute("listaItems");
-        if (listaItems == null) {
-            listaItems = new ArrayList<>();
-        }
-        var existe = false;
+    public void actualiza(Item item) {
         for (Item i : listaItems) {
-            if (i.getIdProducto() == item.getIdProducto()) {
-                existe = true;
-                if (i.getCantidad() < i.getExistencias()) {
-                    i.setCantidad(i.getCantidad() + 1);
-                }
+            if (Objects.equals(i.getIdProducto(), item.getIdProducto())) {
+                i.setCantidad(item.getCantidad());
                 break;
             }
         }
-        if (!existe) {
-            item.setCantidad(1);
-            listaItems.add(item);
-        }
-        session.setAttribute("listaItems", listaItems);
-    }
-
-    @Override
-    public void update(Item item) {
-        List<Item> listaItems = (List) session.getAttribute("listaItems");
-        if (listaItems != null) {
-            for (Item i : listaItems) {
-                if (i.getIdProducto() == item.getIdProducto()) {
-                    i.setCantidad(item.getCantidad());
-                    session.setAttribute("listaItems", listaItems);
-                    break;
-                }
-            }
-        }
     }
 
     @Autowired
-    private UsuarioDao usuarioDao;
-    @Autowired
-    private ProductoDao productoDao;
+    private UsuarioService usarioService;
+
     @Autowired
     private FacturaDao facturaDao;
     @Autowired
     private VentaDao ventaDao;
+    @Autowired
+    private ProductoDao productoDao;
 
     @Override
     public void facturar() {
-        //Se debe recuperar el usuario autenticado y obtener su idUsuario
-        String username;
-        Object principal = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
+        System.out.println("Facturando");
 
+        //Se obtiene el usuario autenticado
+        String username;
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof UserDetails userDetails) {
             username = userDetails.getUsername();
         } else {
@@ -126,57 +118,32 @@ public class ItemServiceImpl implements ItemService {
         }
 
         if (username.isBlank()) {
-            System.out.println("username en blanco...");
             return;
         }
 
-        Usuario usuario = usuarioDao.findByUsername(username);
-        if (usuario == null) {
-            System.out.println("Usuario no existe en usuarios...");
+        Usuario uuario = usarioService.getUsuarioPorUsername(username);
+
+        if (uuario == null) {
             return;
         }
 
-        //Se debe registrar la factura incluyendo el usuario
-        Factura factura = new Factura(usuario.getIdUsuario());
+        Factura factura = new Factura(uuario.getIdUsuario());
         factura = facturaDao.save(factura);
 
-        //Se debe registrar las ventas de cada producto -actualizando existencias-
-        List<Item> listaItems = (List) session.getAttribute("listaItems");
-        if (listaItems != null) {
-            double total = 0;
-            for (Item i : listaItems) {
-                Producto producto = productoDao.getReferenceById(i.getIdProducto());
-                if (producto.getExistencias() >= i.getCantidad()) {
-                    Venta venta = new Venta(factura.getIdFactura(),
-                            i.getIdProducto(),
-                            i.getPrecio(),
-                            i.getCantidad());
-                    ventaDao.save(venta);
-                    producto.setExistencias(producto.getExistencias() - i.getCantidad());
-                    productoDao.save(producto);
-                    total += i.getCantidad() * i.getPrecio();
-                }
-            }
-
-            //Se debe registrar el total de la venta en la factura
-            factura.setTotal(total);
-            facturaDao.save(factura);
-
-            //Se debe limpiar el carrito la lista...
-            listaItems.clear();
-        }
-    }
-
-    public double getTotal() {
-        //Se debe registrar las ventas de cada producto -actualizando existencias-
-        List<Item> listaItems = (List) session.getAttribute("listaItems");
         double total = 0;
-        if (listaItems != null) {
-            for (Item i : listaItems) {
-                total += i.getCantidad() * i.getPrecio();
-            }
+        for (Item i : listaItems) {
+            System.out.println("Producto: " + i.getDescripcion()
+                    + " Cantidad: " + i.getCantidad()
+                    + " Total: " + i.getPrecio() * i.getCantidad());
+            Venta venta = new Venta(factura.getIdFactura(), i.getIdProducto(), i.getPrecio(), i.getCantidad());
+            ventaDao.save(venta);
+            Producto producto = productoDao.getReferenceById(i.getIdProducto());
+            producto.setExistencias(producto.getExistencias()-i.getCantidad());
+            productoDao.save(producto);
+            total += i.getPrecio() * i.getCantidad();
         }
-        return total;
+        factura.setTotal(total);
+        facturaDao.save(factura);
+        listaItems.clear();
     }
 }
-

@@ -9,11 +9,11 @@ package com.tienda.Tienda.service;
  * @author Fabián Vargas
  */
 import com.tienda.Tienda.domain.Item;
+import java.util.ArrayList;
 import java.util.List;
 
-public interface ItemService {
-    
-    //Se usa para tener en una session de memoria la información del carrito de compras
+public interface ItemService {     
+    List<Item> listaItems = new ArrayList<>();
     
     public List<Item> gets();
     
@@ -29,9 +29,7 @@ public interface ItemService {
     //Si el idItem NO existe en la tabla, se crea el registro con esa información
     public void save(Item item);
     
-    public void update(Item item);
+    public void actualiza(Item item);
     
     public void facturar();
-    
-    public double getTotal();
 }
